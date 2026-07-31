@@ -1,0 +1,57 @@
+# /etc/inittab — tinit configuration
+# Format: id:runlevels:action:process
+#
+# id        — up to 4-char identifier (no spaces)
+# runlevels — ignored by tinit (kept for busybox compatibility)
+# action    — see below
+# process   — command to execute (via sh -c if exec fails directly)
+#
+# Actions:
+#   sysinit    Run once at startup, before anything else. tinit waits.
+#   boot       Run once at startup, do NOT wait.
+#   bootwait   Run once at startup, wait for exit.
+#   wait       Run and wait (same as bootwait, usable any time).
+#   once       Run once; don't wait; don't restart.
+#   respawn    Restart whenever process exits (e.g. getty, shell).
+#   askfirst   Like respawn, but show "Press Enter..." prompt first.
+#   ctrlaltdel Run when kernel sends SIGINT (Ctrl+Alt+Del).
+#   shutdown   Run during orderly shutdown sequence.
+#   restart    Run to re-exec init itself.
+#
+# Lines starting with '#' and blank lines are ignored.
+# =============================================================================
+
+# --- Early boot ---------------------------------------------------------------
+# Mount filesystems not handled by tinit itself (e.g. /usr, swap, etc.)
+::sysinit:/etc/init.d/rcS
+
+# Set hostname
+::sysinit:/bin/hostname -F /etc/hostname
+
+# --- Services (start once, no restart) ----------------------------------------
+::once:/sbin/syslogd -n -O /var/log/syslog
+::once:/sbin/klogd -n
+
+# --- Consoles (respawn = auto-restart when getty/shell exits) -----------------
+# Uncomment the getty lines for a real system; use the shell lines for embedded.
+
+# Full-featured getty on first four serial consoles:
+# tty1::respawn:/sbin/getty -L tty1 0 vt100
+# tty2::respawn:/sbin/getty -L tty2 0 vt100
+# ttyS0::respawn:/sbin/getty -L ttyS0 115200 vt100
+# ttyAMA0::respawn:/sbin/getty -L ttyAMA0 115200 vt100
+
+# Simple shell on console (embedded / initramfs):
+con::respawn:/bin/sh
+
+# Ask-first variant (saves accidental console logins):
+# con::askfirst:/bin/sh
+
+# --- Power button / Ctrl+Alt+Del ----------------------------------------------
+::ctrlaltdel:/sbin/reboot
+
+# --- Shutdown actions ---------------------------------------------------------
+# Run before unmounting filesystems.
+::shutdown:/etc/init.d/rcK       # stop services
+::shutdown:/bin/umount -a -r     # unmount (tinit also does this)
+::shutdown:/sbin/swapoff -a
