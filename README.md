@@ -2,7 +2,7 @@
 
 **Tiny, portable Linux init system — busybox-init compatible.**
 
-Single binary, C99, zero runtime dependencies beyond libc.  
+Single binary, C99, zero runtime dependencies beyond libc.
 Designed to be PID 1 in embedded systems, containers, and initramfs images.
 
 ---
