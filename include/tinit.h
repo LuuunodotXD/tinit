@@ -14,7 +14,7 @@
 /* ------------------------------------------------------------------ */
 /* Version & paths                                                     */
 /* ------------------------------------------------------------------ */
-#define TINIT_VERSION   "0.1.0"
+#define TINIT_VERSION   "0.2.0"
 #define INITTAB_PATH    "/etc/inittab"
 #define CONSOLE_DEV     "/dev/console"
 #define NULL_DEV        "/dev/null"
