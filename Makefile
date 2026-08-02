@@ -41,24 +41,29 @@ BIN     := $(OUTDIR)/tinit
 CROSS_PREFIX_x86_glibc        := i686-linux-gnu-
 CROSS_PREFIX_x86_musl         := i686-linux-musl-
 CROSS_PREFIX_x86_uclibc       := i686-linux-uclibc-
+CROSS_PREFIX_x86_dietlibc     := i686-linux-gnu-   # diet wrapper prepended below
 
 CROSS_PREFIX_x86_64_glibc     := x86_64-linux-gnu-
 CROSS_PREFIX_x86_64_musl      := x86_64-linux-musl-
 CROSS_PREFIX_x86_64_uclibc    := x86_64-linux-uclibc-
+CROSS_PREFIX_x86_64_dietlibc  := x86_64-linux-gnu-
 
 CROSS_PREFIX_aarch64_glibc    := aarch64-linux-gnu-
 CROSS_PREFIX_aarch64_musl     := aarch64-linux-musl-
 CROSS_PREFIX_aarch64_uclibc   := aarch64-linux-uclibc-
+CROSS_PREFIX_aarch64_dietlibc := aarch64-linux-gnu-
 
 # armhf = ARMv7 hard-float ABI (Raspberry Pi OS, Debian armhf)
 CROSS_PREFIX_armhf_glibc      := arm-linux-gnueabihf-
 CROSS_PREFIX_armhf_musl       := arm-linux-musleabihf-
 CROSS_PREFIX_armhf_uclibc     := arm-buildroot-linux-uclibcgnueabihf-
+CROSS_PREFIX_armhf_dietlibc   := arm-linux-gnueabihf-
 
 # armv7 = ARMv7 soft-float ABI
 CROSS_PREFIX_armv7_glibc      := arm-linux-gnueabi-
 CROSS_PREFIX_armv7_musl       := arm-linux-musleabi-
 CROSS_PREFIX_armv7_uclibc     := arm-linux-uclibceabi-
+CROSS_PREFIX_armv7_dietlibc   := arm-linux-gnueabi-
 
 CROSS_PREFIX_loongarch64_glibc  := loongarch64-linux-gnu-
 CROSS_PREFIX_loongarch64_musl   := loongarch64-linux-musl-
@@ -67,6 +72,7 @@ CROSS_PREFIX_loongarch64_uclibc := loongarch64-linux-uclibc-
 CROSS_PREFIX_ppc64le_glibc    := powerpc64le-linux-gnu-
 CROSS_PREFIX_ppc64le_musl     := powerpc64le-linux-musl-
 CROSS_PREFIX_ppc64le_uclibc   := powerpc64le-linux-uclibc-
+CROSS_PREFIX_ppc64le_dietlibc := powerpc64le-linux-gnu-
 
 CROSS_PREFIX_riscv64_glibc    := riscv64-linux-gnu-
 CROSS_PREFIX_riscv64_musl     := riscv64-linux-musl-
@@ -75,6 +81,7 @@ CROSS_PREFIX_riscv64_uclibc   := riscv64-linux-uclibc-
 CROSS_PREFIX_s390x_glibc      := s390x-linux-gnu-
 CROSS_PREFIX_s390x_musl       := s390x-linux-musl-
 CROSS_PREFIX_s390x_uclibc     := s390x-linux-uclibc-
+CROSS_PREFIX_s390x_dietlibc   := s390x-linux-gnu-
 
 # Resolve prefix for the requested target
 _KEY            := $(subst -,_,$(TARGET))
@@ -95,12 +102,26 @@ STRIP   ?= $(CROSS_PREFIX)strip
 # Override with SIZE=$(CROSS_PREFIX)size if you have the full cross-binutils.
 SIZE    ?= size
 
+# dietlibc: wrap CC with the 'diet' frontend.
+# diet handles sysroot + linking; the underlying CC is the glibc cross-gcc.
+# For cross-compilation: make ARCH=aarch64 LIBC=dietlibc
+#   → CC becomes: diet aarch64-linux-gnu-gcc
+ifeq ($(LIBC),dietlibc)
+  override CC := diet $(CC)
+  # diet wrapper already forces -static; remove it from LDFLAGS to avoid
+  # "diet: -static not supported" warnings on some versions.
+  LDFLAGS := $(filter-out -static,$(LDFLAGS))
+endif
+
 # Base flags (C99, strict POSIX, no implicit function declarations)
+# -include compat.h: inject our portability shims into every translation
+# unit without requiring each .c file to explicitly include it.
 CFLAGS  ?= -std=c99 \
             -Wall -Wextra -Wshadow -Wstrict-prototypes \
             -Wmissing-prototypes -Wno-unused-parameter \
             -Wno-unused-result \
             -D_GNU_SOURCE \
+            -include $(INCDIR)/compat.h \
             -I$(INCDIR)
 
 # Release flags (override with DEBUG=1)
@@ -168,15 +189,15 @@ info:
 # cross-compiler is not installed will fail gracefully.
 #
 MATRIX_TARGETS := \
-  x86-glibc      x86-musl      x86-uclibc      \
-  x86_64-glibc   x86_64-musl   x86_64-uclibc   \
-  aarch64-glibc  aarch64-musl  aarch64-uclibc  \
-  armhf-glibc    armhf-musl    armhf-uclibc    \
-  armv7-glibc    armv7-musl    armv7-uclibc    \
+  x86-glibc      x86-musl      x86-uclibc      x86-dietlibc   \
+  x86_64-glibc   x86_64-musl   x86_64-uclibc   x86_64-dietlibc \
+  aarch64-glibc  aarch64-musl  aarch64-uclibc  aarch64-dietlibc \
+  armhf-glibc    armhf-musl    armhf-uclibc    armhf-dietlibc  \
+  armv7-glibc    armv7-musl    armv7-uclibc    armv7-dietlibc  \
   loongarch64-glibc loongarch64-musl           \
-  ppc64le-glibc  ppc64le-musl                 \
+  ppc64le-glibc  ppc64le-musl  ppc64le-dietlibc \
   riscv64-glibc  riscv64-musl                 \
-  s390x-glibc    s390x-musl
+  s390x-glibc    s390x-musl    s390x-dietlibc
 
 matrix:
 	@failed=""; \

@@ -4,7 +4,8 @@
 /*
  * tinit — tiny init system
  * Portable C99, Linux only (proc/sys/mount are Linux-specific).
- * Targets: glibc, musl, uclibc  ×  x86/x86_64/aarch64/armhf/armv7/
+ * Targets: glibc, musl, uclibc, dietlibc  ×
+ *          x86/x86_64/aarch64/armhf/armv7/
  *          loongarch64/ppc64le/riscv64/s390x
  */
 
@@ -14,7 +15,7 @@
 /* ------------------------------------------------------------------ */
 /* Version & paths                                                     */
 /* ------------------------------------------------------------------ */
-#define TINIT_VERSION   "0.2.0"
+#define TINIT_VERSION   "0.3.0"
 #define INITTAB_PATH    "/etc/inittab"
 #define CONSOLE_DEV     "/dev/console"
 #define NULL_DEV        "/dev/null"
